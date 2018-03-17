@@ -1,2 +1,2 @@
 # msc-lab
-M.Sc. Lab
+Programs done in M.Sc. Lab, subject wise.
