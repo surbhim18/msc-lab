@@ -22,4 +22,4 @@ The number of cluster for DBScan may be different from 5.
 ------
 clustering.R : univariate fns written
 clustering2.R : step 2, plotted graph without assigning class labels
-clustering3.R : till step 3
+clustering3.R : steps[1-8] ~ steps{5,7,8}

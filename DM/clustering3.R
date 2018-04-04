@@ -66,7 +66,7 @@ cdataset = dataset[,-3]
 #K-MEANS
 #kmeans(x, centers, iter.max = 10)
 clk <- kmeans(cdataset, 5, 10)
-plot(cdataset, col = clk$cluster, pch = clk$cluster, xlab="X", ylab="Y", heading="K-Means")
+plot(cdataset, col = clk$cluster, pch = clk$cluster, xlab="X", ylab="Y")
 points(clk$centers, col = "black" , pch = 8, cex = 1)
 title("K-means")
 legend(xlim[2]-6, ylim[2]-1, legend=c("1","2","3","4","5") , cex=0.8, col = unique(clk$cluster), pch = unique(clk$cluster), title="Clusters")
@@ -80,5 +80,12 @@ title("Heirarchial Clustering")
 legend(xlim[2]-6, ylim[2]-1, legend=c("1","2","3","4","5") , cex=0.8, col = unique(clh), pch = unique(clh), title="Clusters")
 text(xlim[2]-5, ylim[1]+3, "SSE = \nPurity = ", cex=0.8)
 
-
 #DBSCAN
+#downloaded using install.packages("dbscan")
+library(dbscan)
+db <- dbscan(cdataset, eps = 1.5, minPts = 5)
+cld <- db$cluster+1
+plot(cdataset, col = cld, pch = cld, xlab="X", ylab="Y")
+title("DBScan")
+legend(xlim[2]-6, ylim[2]-1, legend=c("1","2","3","4","5") , cex=0.8, col = unique(cld), pch = unique(cld), title="Clusters")
+text(xlim[2]-5, ylim[1]+3, "SSE = \nPurity = ", cex=0.8)
