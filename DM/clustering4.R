@@ -65,33 +65,56 @@ cdataset = dataset[,-3]
 
 #FUNCTIONS
 #Purity
-#options(R_CHECK_RUNNING_EXAMPLES_=TRUE)
-#install.packages("NMF")
-#library("NMF")
 cal_purity <- function(new_labs, old_labs) 
 {
   purity <- sum(apply(table(old_labs, new_labs), 2, max)) / length(new_labs)
   return (purity)
 }
 
+#SSE
+#mean has been calculated
+cal_SSE <- function(dataset, new_labs, k)
+{
+  sum_x <- vector(mode = "numeric", length = k)
+  sum_y <- vector(mode = "numeric", length = k)
+  nc <- vector(mode = "numeric", length = k)
+  n = nrow(dataset)
+  
+  for (i in 1:n)
+  {
+    sum_x[new_labs[i]] <- sum_x[new_labs[i]] + dataset[i,1]
+    sum_y[new_labs[i]] <- sum_y[new_labs[i]] + dataset[i,2]
+    nc[new_labs[i]] <- nc[new_labs[i]] + 1
+  }
+  mean_x <- sum_x/nc
+  mean_y <- sum_y/nc
+  
+  sse <- cbind(mean_x,mean_y)
+  return (sse)
+}
+
 
 #K-MEANS
 #kmeans(x, centers, iter.max = 10)
-clk <- kmeans(cdataset, 5, 10)
+cluster_size <- 5
+clk <- kmeans(cdataset, cluster_size, 10)
 plot(cdataset, col = clk$cluster, pch = clk$cluster, xlab="X", ylab="Y")
 points(clk$centers, col = "black" , pch = 8, cex = 1)
 title("K-means")
-legend(xlim[2]-6, ylim[2]-1, legend=c("1","2","3","4","5") , cex=0.8, col = unique(clk$cluster), pch = unique(clk$cluster), title="Clusters")
+legend(xlim[2]-6, ylim[2]-1, legend = sort(unique(clk$cluster)) , cex=0.8, col = sort(unique(clk$cluster)), pch = sort(unique(clk$cluster)), title="Clusters")
 purity <- cal_purity(clk$cluster,dataset[,3])
+sse <- cal_SSE(cdataset,clk$cluster, cluster_size)
 text(xlim[2]-5, ylim[1]+3, "SSE = \nPurity = ", cex=0.8)
 
 #HIERARCHICHAL CLUSTERING
+cluster_size <- 5
 hc <- hclust(dist(cdataset), "ward.D")
-clh <- cutree(as.hclust(hc), k = 5)
+clh <- cutree(as.hclust(hc), k = cluster_size)
 plot(cdataset, col = clh, pch = clh, xlab="X", ylab="Y")
 title("Heirarchial Clustering")
-legend(xlim[2]-6, ylim[2]-1, legend=c("1","2","3","4","5") , cex=0.8, col = unique(clh), pch = unique(clh), title="Clusters")
+legend(xlim[2]-6, ylim[2]-1, legend = sort(unique(clh)) , cex=0.8, col = sort(unique(clh)), pch = sort(unique(clh)), title="Clusters")
 purity <- cal_purity(clh,dataset[,3])
+sse <- cal_SSE(cdataset,clh, cluster_size)
 text(xlim[2]-5, ylim[1]+3, "SSE = \nPurity = ", cex=0.8)
 
 #DBSCAN
@@ -101,7 +124,9 @@ db <- dbscan(cdataset, eps = 1.5, minPts = 5)
 cld <- db$cluster+1
 plot(cdataset, col = cld, pch = cld, xlab="X", ylab="Y")
 title("DBScan")
-legend(xlim[2]-6, ylim[2]-1, legend=unique(cld) , cex=0.8, col = unique(cld), pch = unique(cld), title="Clusters")
+cluster_size <- length(unique(cld))
+legend(xlim[2]-6, ylim[2]-1, legend = sort(unique(cld)) , cex=0.8, col = sort(unique(cld)), pch = sort(unique(cld)), title="Clusters")
 purity <- cal_purity(cld,dataset[,3])
+sse <- cal_SSE(cdataset,cld, cluster_size)
 text(xlim[2]-5, ylim[1]+3, "SSE = \nPurity = ", cex=0.8)
 
