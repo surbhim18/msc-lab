@@ -1,52 +1,12 @@
-#Generating random numbers
-num <- sample(50:100, 5, replace=TRUE)
-
-library(MASS)
-#First distribution - Gaussian
-u1 <- c(-7,0)
-sigma1 <- matrix(c(10,2,2,2),2,2)
-d1 <- mvrnorm(n = num[1], u1 , sigma1)
-
-
-#Second distribution - Gaussian
-u2 <- c(15,15)
-sigma2 <- matrix(c(2,3,3,10),2,2)
-d2 <- mvrnorm(n = num[2], u2 , sigma2)
-
-
-#Third distribution - Gaussian
-u3 <- c(5,10)
-sigma3 <- matrix(c(5,4,5,5),2,2)
-d3 <- mvrnorm(n = num[3], u3 , sigma3)
-
-
-#library downloaded from https://cran.r-project.org/web/packages/LaplacesDemon/index.html
-library(LaplacesDemon)
-#Fourth distribution - Exponential
-u4 <- c(-10,15)
-sigma4 <- matrix(c(10,5,5,10),2,2)
-d4 <- rmvpe(num[4], u4, sigma4, kappa=1)
-
-
-#Fifth distribution - Uniform
-xmin <- min(d1[,1],d2[,1],d3[,1],d4[,1])
-xmax <- max(d1[,1],d2[,1],d3[,1],d4[,1])
-ymin <- min(d1[,2],d2[,2],d3[,2],d4[,2])
-ymax <- max(d1[,2],d2[,2],d3[,2],d4[,2])
-d5 <- matrix(c(runif(num[5],xmin,xmax),runif(num[5],ymin,ymax)),num[5],2)
-
-
-#assigning class labels to points
-d1 <- cbind(d1,1)
-d2 <- cbind(d2,2)
-d3 <- cbind(d3,3)
-d4 <- cbind(d4,4)
-d5 <- cbind(d5,5)
-
-#combining points
-dataset <- as.matrix(rbind(d1, d2, d3, d4,d5))
+#uses data in dataset.txt
+dataset <- read.table("dataset.txt",header=TRUE,row.names=1)
 
 #find min y from all plots, max y from all plots
+xmin <- min(dataset[,1])
+xmax <- max(dataset[,1])
+ymin <- min(dataset[,2])
+ymax <- max(dataset[,2])
+
 xlim = c(xmin,xmax)
 ylim = c(ymin,ymax)
 
@@ -150,5 +110,3 @@ sse <- round(cal_SSE(cdataset,cld, cluster_size),3)
 val <- paste(paste("SSE = ",sse),paste("\nPurity = ",purity))
 text(xlim[2]-12, ylim[1]+3, val , cex=0.8)
 
-#write.table(dataset,file="dataset.txt")
-#mat <- read.table("dataset.txt",header=TRUE,row.names=1)
