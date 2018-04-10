@@ -15,11 +15,10 @@ The number of cluster for DBScan may be different from 5.
 
 8. Email the report before the deadline.
 
--------------
-1. Check density plots to see if distributions are correct. -- not possible with bivariate data
-2. Write all points in files when done. create another script that just uses them.
-
 ------
 clustering.R : univariate fns written
 clustering2.R : step 2, plotted graph without assigning class labels
 clustering3.R : steps[1-8] ~ steps{5,7,8}
+clustering4.R : complete
+clustering_script.R : uses file dataset.txt
+dataset.txt : contains data generated as per problem statement (using clustering4.R)
