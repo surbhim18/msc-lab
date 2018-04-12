@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include<string.h>
 
 /* Global declaration of array and array size. */
 int *arr, size;
@@ -56,7 +57,7 @@ void getarr(char *fname)
 }
 
 /* Program for linear search; returns index of element, if found */
-int linearSearch(int *arr, int start, int end, int val)
+int linear_search(int *arr, int start, int end, int val)
 {
     int i;
     
@@ -72,7 +73,123 @@ int linearSearch(int *arr, int start, int end, int val)
     return -1;
 }
 
+int distributed_search(int *arr, int start, int end, int val)
+{
+    int index;
+    int arrsize = end - start +1;
+    
+    if(arrsize > 5)
+    {
+        int ret;
+        pid_t pid1, pid2;
+        
+         /* Pipe for IPC */
+         
+         //create parent pipe
+    
+        int to_chil_1[2];  /* information to child process 1 */
+        pipe(to_chil_1);    
+        
+        int to_chil_2[2];  /* information to child process 2 */
+        pipe(to_chil_2); 
 
+        int start1 = start; int end1 = (arrsize/2)-1;
+        int start2 = (arrsize/2); int end2 = end;
+        
+        close(to_chil_1[0]);                      /* close read end to child 1 */
+        close(to_chil_2[0]);                      /* close read end to child 2 *
+            
+        /* write arr starting and end index */
+        write(to_chil_1[1], &start, sizeof(start1));
+        write(to_chil_1[1], &end, sizeof(end1));
+            
+        write(to_chil_2[1], &start, sizeof(start2));
+        write(to_chil_2[1], &end, sizeof(end2));
+        
+        pid_t pid;
+        pid = fork();
+    
+        if(pid < 0)
+        {
+            printf("Error creating process!\n");
+            exit(1);
+        }
+        
+        
+        if(pid == 0)         /* child 1 created */
+        {
+            pid1 = getpid();
+            printf("Inside child 1\n");
+        
+            close(to_chil_1[1]);                       /* close write end to child */
+        
+            int start, end;
+        
+            /* read arr starting and end index */
+            read(to_chil_1[0], &start, sizeof(start));
+            read(to_chil_1[0], &end, sizeof(end));
+        
+            return distributed_search(arr,start,end,val); /* function call to search for element */
+            
+        }
+        else                /* parent process */
+        {
+        
+            wait(); /* Wait for child process to finish execution */
+            printf("Inside parent\n");
+  
+            pid = fork();
+    
+            if(pid < 0)
+            {
+                printf("Error creating process!\n");
+                exit(1);
+            }
+            
+            if(pid == 0) /* child 2 created here */
+            {
+                pid2 = getpid();   /* child 2 created */
+                printf("Inside child 2\n");
+        
+                close(to_chil_2[1]);                       /* close write end to child */
+        
+                int start, end;
+        
+                /* read arr starting and end index */
+                read(to_chil_2[0], &start, sizeof(start));
+                read(to_chil_2[0], &end, sizeof(end));
+        
+                return distributed_search(arr,start,end,val); /* function call to search for element */
+            }
+        }
+        
+    }
+    else
+    {
+        printf("Parent searching\n");
+        index = linear_search(arr,start,end,val);
+        
+        if(index == -1)
+            kill(getpid());
+        
+        //write in parent pipe //send SIGINT
+         /* send a signal to main program */
+        //kill(0, SIGINT); 
+        return index;
+    }
+}
+
+static void sig_usr(int signo)
+{
+    //catch SIGNINT, print index, exit program, kill all other process
+    if(signo == SIGINT)
+    {
+        char buf[] = "SIGINT signal caught!!\n";
+        int wr = strlen(buf);
+        write(STDOUT_FILENO, buf, wr);
+    }
+    return;
+}
 
 int main(int argc, char *argv[])
 {
@@ -88,76 +205,39 @@ int main(int argc, char *argv[])
     getarr(argv[1]);
     /* Converting number to be searched to integer. */
     val = atoi(argv[2]);
+    
+    
+    /* Setting up signal handlers */
+    struct sigaction sig;
+    sigemptyset(&sig.sa_mask);
+    sig.sa_flags = 0;
+    sig.sa_handler = sig_usr;
+    
+    
+    /* function to search */
+    int index = -1;
+    index = distributed_search(arr, 0, size-1, val);
+    
+    //signal(SIGINT,sig_usr);
+    if(sigaction(SIGINT,&sig,NULL) == 0)
+                printf("Signal processed OKay ");
 
-    /* Pipe for IPC */
-    int to_par[2];  /* information to parent process */
-    pipe(to_par);
-    
-    int to_chil[2];  /* information to child process */
-    pipe(to_chil);    
-    
-
-    /* Creating a child process */
-    pid_t pid;
-    pid = fork();
-    
-    if(pid < 0)
-    {
-        printf("Error creating process!\n");
-        exit(1);
+    char buf[100];
+    if(index == -1)
+    {    
+        strcpy(buf,"Element not found!\n");
     }
-
-    //fork children till array size <= 5 for each process 
-    if(pid == 0) /* Child process */
+    else
     {
-        printf("Inside child\n");
-        
-        close(to_par[0]);                        /* close read end to parent */
-        close(to_chil[1]);                       /* close write end to child */
-        
-        int start, end;
-        
-        /* read arr starting and end index */
-        read(to_chil[0], &start, sizeof(start));
-        read(to_chil[0], &end, sizeof(end));
-        
-        //modify code to search accordingly.
-        
-        int index = linearSearch(arr,start,end,val); /* function call to search for element */
-        if(index == -1)
-            exit(getpid());         /* process exits by itself if element not found */
-        
-        write(to_par[1], &index, sizeof(index)); /* writing to pipe */
-        
+        strcpy(buf,"Element found at ");
+        sprintf(buf, "%d", index);
     }
-    else      /* Parent process */
-    {
-        close(to_par[1]);                       /* close write end to parent */
-        close(to_chil[0]);                      /* close read end to child  */
+    int wr = strlen(buf);
+    write(STDOUT_FILENO, buf, wr);
         
-        /* write arr starting and end index */
-        int start = 0;
-        int end = size-1;
-        write(to_chil[1], &start, sizeof(start));
-        write(to_chil[1], &end, sizeof(end));
-        
-        wait(); /* Wait for child process to finish execution */
-        
-        printf("Inside parent\n");
-  
-        int index = -1;
-        read(to_par[0], &index, sizeof(index)); /* reading from pipe */
-    
-        if(index == -1)
-            printf("Element not found!\n");
-        else
-            printf("Element found at index %d.\n",index);
-        
-        //parent process should recieve the signal
-        //parent process shouldn't have to wait for all processes to complete execution
-        //kill all other processes
-        //handle not getting any signal
-    }
+    sleep(10);
+    /*kill all other processes */
+    /* print returned value */
     
     return 0;
 }
