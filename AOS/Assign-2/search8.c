@@ -74,28 +74,27 @@ int linear_search(int *arr, int start, int end, int val)
     return -1;
 }
 
+int to_chil_1[2];  /* information to child process 1 */
+int to_chil_2[2];  /* information to child process 2 */
+int to_par[2];
 
-int distributed_search(int *arr, int start, int end, int val)
+//int distributed_search(int *arr, int start, int end, int val)
+void distributed_search(int *arr, int start, int end, int val)
 {
     
     int index;
     int arrsize = end - start +1;
+    
+     if(start < 0 || end >= size || start > end)
+        exit(0);
     
      if(arrsize > 5)
      {
          
         pid_t pid1, pid2;
         
-         /* Pipe for IPC */
-         
-        int to_chil_1[2];  /* information to child process 1 */
-        pipe(to_chil_1);    
-        
-        int to_chil_2[2];  /* information to child process 2 */
-        pipe(to_chil_2); 
-
-        int start1 = start; int end1 = (arrsize/2)-1;
-        int start2 = (arrsize/2); int end2 = end;
+        int start1 = start; int end1 = start + (arrsize/2)-1;
+        int start2 = start + (arrsize/2); int end2 = end;
         
         pid_t pid;
         pid = fork();
@@ -112,25 +111,27 @@ int distributed_search(int *arr, int start, int end, int val)
             pid1 = getpid();
             printf("Inside child 1\n");
         
-            close(to_chil_1[1]);                       /* close write end to child */
+            //close(to_chil_1[1]);                       /* close write end to child */
         
             int start, end;
         
             /* read arr starting and end index */
             read(to_chil_1[0], &start, sizeof(start));
             read(to_chil_1[0], &end, sizeof(end));
-        
-            return distributed_search(arr,start,end,val); /* function call to search for element */
+            printf("\nc1: s: %d, e: %d\n",start,end);
+            
+            distributed_search(arr,start,end,val); /* function call to search for element */
             
         }
         else                /* parent process */
         {
            
-            close(to_chil_1[0]);                      /* close read end to child 1 */
+            //close(to_chil_1[0]);                      /* close read end to child 1 */
             
             /* write arr starting and end index */
             write(to_chil_1[1], &start1, sizeof(start1));
             write(to_chil_1[1], &end1, sizeof(end1));
+            printf("\ns1: %d, e1: %d\n",start1,end1);
         
             printf("Inside parent\n");
   
@@ -147,7 +148,7 @@ int distributed_search(int *arr, int start, int end, int val)
                 pid2 = getpid();   /* child 2 created */
                 printf("Inside child 2\n");
         
-                close(to_chil_2[1]);                       /* close write end to child */
+                //close(to_chil_2[1]);                       /* close write end to child */
         
                 int start, end;
         
@@ -155,18 +156,21 @@ int distributed_search(int *arr, int start, int end, int val)
                 read(to_chil_2[0], &start, sizeof(start));
                 read(to_chil_2[0], &end, sizeof(end));
         
-                return distributed_search(arr,start,end,val); /* function call to search for element */
+                printf("\nc2: s: %d, e: %d\n",start,end);
+                distributed_search(arr,start,end,val); /* function call to search for element */
             }
             else
             {
-                close(to_chil_2[0]);                      /* close read end to child 2 */
+              //  close(to_chil_2[0]);                      /* close read end to child 2 */
             
                 write(to_chil_2[1], &start2, sizeof(start2));
                 write(to_chil_2[1], &end2, sizeof(end2));
+            
+                printf("\ns2: %d, e2: %d\n",start2,end2);
                 
                 wait(NULL); /* Wait for child process to finish execution */
             }
-             //wait(NULL);    /* check this out */
+            // wait(NULL);    /* check this out */
         }
         
     }
@@ -175,25 +179,38 @@ int distributed_search(int *arr, int start, int end, int val)
         printf("Parent searching\n");
         index = linear_search(arr,start,end,val);
         
-        if(index == -1)
-            kill(getpid(),SIGTERM); //change
-            //kill(getpid(),SIGINT);
-     //   else
-       // signal(SIGINT,sig_usr);
-     //   printf("Element found at %d",index);
-       // printf("Element found at %d",index);
-            
-         char buf[100];   
-         sprintf(buf,"%s %d\n","Element found at ",index); 
-         int wr = strlen(buf);
-        write(STDOUT_FILENO, buf, wr);
-            
-        kill(0,SIGKILL); //kill(0,SIGTERM);
-            
-        return index;
+        printf("\nSize here is: %d\n",size);
+        printf("\nIndex here is: %d\n",index);
+        
+        if(index < 0 || index >= size)
+        {
+            return;
+        }
+        else
+        {
+            printf("in fn: %d\n",index);
+            write(to_par[1], &index, sizeof(index));
+            raise(1);
+            return;
+        }
     }
 }
 
+static void sig_usr(int signo)
+{
+    char buf[] = "signal caught!!\n";
+    int wr = strlen(buf);
+    write(STDOUT_FILENO, buf, wr);
+    
+    int index;
+    read(to_par[0], &index, sizeof(index));
+    
+    printf("\nElement found at index : %d\n",index);
+    
+    kill(0,SIGTERM); //kill(0,SIGINT); //kill(0,SIGTERM);
+    //exit(0);
+    
+}
 
 
 int main(int argc, char *argv[])
@@ -211,40 +228,20 @@ int main(int argc, char *argv[])
     getarr(argv[1]);
     /* Converting number to be searched to integer. */
     val = atoi(argv[2]);
+    printf("\n\nTo search: %d\n",val);
     
-    /* Setting up signal handlers */
-  /*  struct sigaction sig;
-    sigemptyset(&sig.sa_mask);
-    sig.sa_flags = 0;
-    sig.sa_handler = sig_usr; */
+    signal(1,sig_usr);
     
+    pipe(to_chil_1);    
+    pipe(to_chil_2);
+    pipe(to_par);
+   
     
     /* function to search */
     int index = -1;
-    index = distributed_search(arr, 0, size-1, val);
-    
-   // printf("here");
-    
-    //signal(SIGINT,sig_usr);
- //   if(sigaction(SIGINT,&sig,NULL) == 0)
-   //             printf("Signal processed OKay ");
 
-    /*char buf[100];
-    if(index == -1)
-    {    
-        sprintf(buf,"%s","Element not found!\n");
-    }
-    else
-    {
-        sprintf(buf,"%s %d\n","Element found at ",index);
-    }
-    int wr = strlen(buf);
-    write(STDOUT_FILENO, buf, wr);
-    */    
-//    sleep(10);
-   // kill(0,SIGINT);
-    /*kill all other processes */
-    /* print returned value */
+    distributed_search(arr, 0, size-1, val);
+    printf("\nElement not found!\n");
     
     return 0;
 }
