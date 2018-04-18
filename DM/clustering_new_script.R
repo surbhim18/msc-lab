@@ -1,5 +1,5 @@
-#uses data in dataset.txt
-dataset <- read.table("dataset.txt",header=TRUE,row.names=1)
+#uses data in dataset2.txt
+dataset <- read.table("dataset2.txt",header=TRUE,row.names=1)
 
 #find min y from all plots, max y from all plots
 xmin <- min(dataset[,1])
@@ -112,3 +112,5 @@ sse <- round(cal_SSE(cdataset,cld, cluster_size),3)
 val <- paste(paste("SSE = ",sse),paste("\nPurity = ",purity))
 text(xlim[2]-12, ylim[1]+3, val , cex=0.8)
 
+#write.table(dataset,file="dataset2.txt")
+#mat <- read.table("dataset.txt",header=TRUE,row.names=1)

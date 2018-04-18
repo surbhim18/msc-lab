@@ -3,7 +3,7 @@ num <- sample(50:100, 5, replace=TRUE)
 
 library(MASS)
 #First distribution - Gaussian
-u1 <- c(-7,0)
+u1 <- c(-10,0)
 sigma1 <- matrix(c(10,2,2,2),2,2)
 d1 <- mvrnorm(n = num[1], u1 , sigma1)
 

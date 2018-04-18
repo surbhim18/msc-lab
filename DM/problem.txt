@@ -22,3 +22,12 @@ clustering3.R : steps[1-8] ~ steps{5,7,8}
 clustering4.R : complete
 clustering_script.R : uses file dataset.txt
 dataset.txt : contains data generated as per problem statement (using clustering4.R)
+-------------------------------
+
+study -
+1. purity (theory, function code)
+2. what all k-mean returns, R doc
+3. heir dendogram, and obj returned, R doc
+4. dbscan properly from notes, R doc
+5. what happened with old readings
+6. what happened to new readings
