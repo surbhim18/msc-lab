@@ -1,0 +1,3 @@
+Hello I am an input file.
+I need to be reversed.
+Help me!
