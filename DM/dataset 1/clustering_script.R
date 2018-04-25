@@ -39,6 +39,18 @@ cal_purity <- function(new_labs, old_labs)
   return (purity)
 }
 
+#Purity without noise points
+cal_purity_noise <- function(new_labs, old_labs) 
+{
+  remove <- c(0)
+  indices <- new_labs %in% remove
+  new_labs <- new_labs[!indices]
+  old_labs <- old_labs[!indices]
+  
+  purity <- sum(apply(table(old_labs, new_labs), 2, max)) / length(new_labs)
+  return (purity)
+}
+
 #SSE
 cal_SSE <- function(dataset, new_labs, k)
 {
@@ -101,14 +113,17 @@ text(xlim[2]-12, ylim[1]+3, val , cex=0.8)
 #DBSCAN
 #downloaded using install.packages("dbscan")
 library(dbscan)
+kNNdistplot(cdataset, k = 5)
 db <- dbscan(cdataset, eps = 1.5, minPts = 5)
 cld <- db$cluster
+hullplot(cdataset, db)
 plot(cdataset, col = cld+1, pch = cld+1, xlab="X", ylab="Y")
 title("DBScan")
 cluster_size <- length(unique(cld)) - 1
-legend(xlim[2]-6, ylim[2]-8, legend = sort(unique(cld)) , cex=0.8, col = sort(unique(cld + 1)), pch = sort(unique(cld + 1)), title="Clusters")
+legend(xlim[2]-6, ylim[2]-4, legend = sort(unique(cld)) , cex=0.8, col = sort(unique(cld + 1)), pch = sort(unique(cld + 1)), title="Clusters")
 purity <- round(cal_purity(cld,dataset[,3]),3)
+purity_noise <- round(cal_purity_noise(cld,dataset[,3]),3)
 sse <- round(cal_SSE(cdataset,cld, cluster_size),3)
-val <- paste(paste("SSE = ",sse),paste("\nPurity = ",purity))
-text(xlim[2]-12, ylim[1]+3, val , cex=0.8)
+val <- paste(paste("SSE = ",sse),paste("\nPurity = ",purity),paste("\nPurity (w/o noise) = ",purity_noise))
+text(xlim[2]-15, ylim[1]+3, val , cex=0.8)
 
